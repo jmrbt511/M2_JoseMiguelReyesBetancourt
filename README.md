@@ -101,3 +101,7 @@ npm test
 
 ## 
 URL pública: https://m2josemiguelreyesbetancourt-production.up.railway.app
+
+##
+Uso de la IA 
+https://docs.google.com/document/d/1Kjv3_NcDzKLT36rQF-dovBcj5P2x4xKURHFNTU1RJ4g/edit?usp=sharing
