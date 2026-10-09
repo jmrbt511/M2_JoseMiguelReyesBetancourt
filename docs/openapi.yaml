@@ -1,0 +1,352 @@
+openapi: 3.0.3
+info:
+  title: Mini Blog API
+  version: 2.0.0
+  description: >
+    API REST de Mini Blog (Express + PostgreSQL): autores, artículos y comentarios.
+    Relación 1:N entre autores y artículos; un artículo tiene varios comentarios.
+servers:
+  - url: http://localhost:3000
+    description: Local
+  - url: https://TU-APP.up.railway.app
+    description: Producción (Railway) – sustituir por la URL pública
+tags:
+  - name: Authors
+  - name: Posts
+  - name: Comments
+  - name: System
+
+paths:
+  /authors:
+    get:
+      tags: [Authors]
+      summary: Listar los autores
+      responses:
+        '200':
+          description: Lista de autores
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Author' } }
+    post:
+      tags: [Authors]
+      summary: Crear un autor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuthorInput' }
+      responses:
+        '201':
+          description: Autor creado
+          headers:
+            Location: { schema: { type: string, example: /authors/1 } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Author' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /authors/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Authors]
+      summary: Detalles de un autor
+      responses:
+        '200':
+          description: Autor
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Author' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Authors]
+      summary: Actualizar un autor (reemplazo completo; bio ausente = borrada)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuthorInput' }
+      responses:
+        '200':
+          description: Autor actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Author' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [Authors]
+      summary: Eliminar un autor
+      description: Elimina también sus artículos (CASCADE). Sus comentarios se conservan con `author_id = null`.
+      responses:
+        '204': { description: Eliminado }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /posts:
+    get:
+      tags: [Posts]
+      summary: Listar los artículos (con los detalles de su autor)
+      parameters:
+        - name: published
+          in: query
+          required: false
+          schema: { type: string, enum: ['true', 'false'] }
+      responses:
+        '200':
+          description: Lista de artículos
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Post' } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+    post:
+      tags: [Posts]
+      summary: Crear un artículo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PostCreate' }
+      responses:
+        '201':
+          description: Artículo creado
+          headers:
+            Location: { schema: { type: string, example: /posts/1 } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Post' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /posts/author/{authorId}:
+    get:
+      tags: [Posts]
+      summary: Artículos de un autor, con los detalles del autor
+      parameters:
+        - name: authorId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Artículos del autor (lista vacía si no tiene ninguno)
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Post' } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /posts/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Posts]
+      summary: Detalle de un artículo
+      responses:
+        '200':
+          description: Artículo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Post' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Posts]
+      summary: Actualizar un artículo (`title` y `content` obligatorios)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PostUpdate' }
+      responses:
+        '200':
+          description: Artículo actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Post' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Posts]
+      summary: Eliminar un artículo (y sus comentarios, en cascada)
+      responses:
+        '204': { description: Eliminado }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /posts/{postId}/comments:
+    parameters:
+      - name: postId
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      tags: [Comments]
+      summary: Listar los comentarios de un artículo
+      responses:
+        '200':
+          description: Comentarios, del más antiguo al más reciente
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Comment' } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Comments]
+      summary: Añadir un comentario a un artículo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CommentInput' }
+      responses:
+        '201':
+          description: Comentario creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Comment' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /comments/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    delete:
+      tags: [Comments]
+      summary: Eliminar un comentario
+      responses:
+        '204': { description: Eliminado }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /health:
+    get:
+      tags: [System]
+      summary: Health check (verifica la conexión a PostgreSQL)
+      responses:
+        '200':
+          description: API y base de datos disponibles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  database: { type: string, example: up }
+        '503': { description: Base de datos no disponible }
+
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1 }
+
+  responses:
+    ValidationError:
+      description: Datos o identificador inválidos
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Conflicto (e-mail ya utilizado)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string, example: Validation échouée }
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string, example: name }
+              message: { type: string, example: name est requis et ne peut pas être vide }
+
+    Author:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        name: { type: string, example: Alice Martin }
+        email: { type: string, format: email, example: alice@example.com }
+        bio: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    AuthorInput:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        email: { type: string, format: email, description: Único (sin distinguir mayúsculas) }
+        bio: { type: string, nullable: true }
+
+    AuthorSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        bio: { type: string, nullable: true }
+
+    Post:
+      type: object
+      properties:
+        id: { type: integer }
+        author_id: { type: integer }
+        title: { type: string }
+        content: { type: string }
+        published: { type: boolean }
+        created_at: { type: string, format: date-time }
+        author: { $ref: '#/components/schemas/AuthorSummary' }
+
+    PostCreate:
+      type: object
+      required: [author_id, title, content]
+      properties:
+        author_id: { type: integer, minimum: 1 }
+        title: { type: string, minLength: 1, maxLength: 255 }
+        content: { type: string, minLength: 1 }
+        published: { type: boolean, default: false }
+
+    PostUpdate:
+      type: object
+      required: [title, content]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 255 }
+        content: { type: string, minLength: 1 }
+        published: { type: boolean, description: Sin cambios si se omite }
+
+    Comment:
+      type: object
+      properties:
+        id: { type: integer }
+        post_id: { type: integer }
+        author_id: { type: integer, nullable: true, description: null si el autor fue eliminado }
+        content: { type: string }
+        created_at: { type: string, format: date-time }
+        author:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            name: { type: string }
+
+    CommentInput:
+      type: object
+      required: [author_id, content]
+      properties:
+        author_id: { type: integer, minimum: 1 }
+        content: { type: string, minLength: 1 }
