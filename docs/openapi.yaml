@@ -6,10 +6,12 @@ info:
     API REST de Mini Blog (Express + PostgreSQL): autores, artículos y comentarios.
     Relación 1:N entre autores y artículos; un artículo tiene varios comentarios.
 servers:
+  - url: /
+    description: Servidor actual (el mismo que sirve esta documentación)
   - url: http://localhost:3000
     description: Local
   - url: https://m2josemiguelreyesbetancourt-production.up.railway.app
-    description: Producción (Railway) – sustituir por la URL pública
+    description: Producción (Railway)
 tags:
   - name: Authors
   - name: Posts
