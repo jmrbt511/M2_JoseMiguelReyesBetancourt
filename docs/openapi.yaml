@@ -8,7 +8,7 @@ info:
 servers:
   - url: http://localhost:3000
     description: Local
-  - url: https://TU-APP.up.railway.app
+  - url: https://m2josemiguelreyesbetancourt-production.up.railway.app
     description: Producción (Railway) – sustituir por la URL pública
 tags:
   - name: Authors

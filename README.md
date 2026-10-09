@@ -100,4 +100,4 @@ npm test
 
 
 ## 
-URL pública: _por completar tras el despliegue_
+URL pública: https://m2josemiguelreyesbetancourt-production.up.railway.app
